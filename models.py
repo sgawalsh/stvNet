@@ -526,10 +526,11 @@ modelsDict = {
 	'stvNet_new_coords_alt_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = True),
 	'stvNet_new_coords_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
 	'stvNet_new_classes' : modelDictVal(stvNetNew, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
+	'stvNet_new_combined' : modelDictVal(stvNetNew, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 20, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}),
 }
 	
 if __name__ == "__main__" :
-	modelSets = [modelSet('stvNet_coords_altLabels'), modelSet('stvNet_coords_noAug'), modelSet('stvNet_coords_altLabels_noAug'), modelSet('stvNet_coords'), modelSet('stvNet_new_coords_alt'), modelSet('stvNet_new_coords_aug'), modelSet('stvNet_new_coords'), modelSet('uNet_coords')] # vector outputs
+	modelSets = [modelSet('stvNet_coords_altLabels'), modelSet('stvNet_coords_noAug'), modelSet('stvNet_coords_altLabels_noAug'), modelSet('stvNet_coords'), modelSet('stvNet_new_coords_alt'), modelSet('stvNet_new_coords_aug'), modelSet('stvNet_new_coords'), modelSet('stvNet_new_combined')] # vector outputs
 	#modelSets = [modelSet('stvNet_new_classes'), modelSet('uNet_classes'), modelSet('stvNet_classes')] # class outputs
 	#modelSets = [modelSet('uNet_coords')]
 	
@@ -537,10 +538,6 @@ if __name__ == "__main__" :
 	
 	#evaluateModels(modelSets)
 	#loadHistories(modelSets)
-	#trainModels(modelSets, True)
-	plotHistories(modelSets)
-	#model = trainModelClassGen(model.structure, model.name, model.losses, metrics = model.metrics, epochs = model.epochs, outVectors = model.outVectors, outClasses = model.outClasses, outVecName = model.outVecName, outClassName = model.outClassName, learningRate = model.lr)
-	#model = modelsDict["stvNet_coords_slow_learner"]
-	#evalModel = loadModelWeights(model.structure, model.name, modelClass = 'cat', outVectors = model.outVectors, outClasses = model.outClasses, losses = model.losses)
-	#loadHistory('stvNet_coords', 'cat')
+	trainModels(modelSets, True)
+	#plotHistories(modelSets)
 	pass
