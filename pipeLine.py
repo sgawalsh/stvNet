@@ -10,6 +10,7 @@ maskThreshold = .9 # min value for pixel to be included in population of ransac 
 pruneBool = True # flag to perform pruning operation
 pruneRatio = .5 # percent of smallest weighted hypotheses to be pruned
 noiseScale = .1 # artificially add noise to true target data, used for testing pnp accuracy
+checkQuads = True
 
 def predictPose(coords, classes, showClassPred = False, labels = False, addNoise = False, modelName = 'cat', checkPreds = False, altLabels = True, pruning = True):
 	if showClassPred: # display class prediction
@@ -75,14 +76,16 @@ def ransacVoting(population, coords): # ransac voting to generate 2d keypoint hy
 		#print(p1, p2)
 		#print(v1, v2)
 		for i in range(9): # find lines intersection, use as hypothesis
-			m1 = v1[i * 2 + 1] / v1[i * 2]
+			m1 = v1[i * 2 + 1] / v1[i * 2] # get slopes
 			m2 = v2[i * 2 + 1] / v2[i * 2]
-			if not (abs(m1) - abs(m2)): # lines must intersect
+			if not (m1 - m2): # lines must intersect
 				continue
-			b1 = p1[0] - p1[1] * m1
+			b1 = p1[0] - p1[1] * m1 # get y intercepts
 			b2 = p2[0] - p2[1] * m2
 			x = (b2 - b1) / (m1 - m2)
 			y = m1 * x + b1
+			if checkQuads and (y >= p1[0] != v1[i * 2 + 1] < 0 or x >= p1[1] != v1[i * 2] < 0 or y >= p2[0] != v2[i * 2 + 1] < 0 or y >= p2[1] != v2[i * 2] < 0): # check if line intersection takes place according to unit vector directions
+				continue
 			#print(y, x)
 			weight = 0
 			for voter in population: # voting for fit of hypothesis
@@ -395,5 +398,5 @@ if __name__ == "__main__" :
 	#modelSets = [modelSet('stvNetAltLabels'), modelSet('stvNetNormLabels')]
 	#evalModels(modelSets, allValid = True)
 	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords_alt'})]
-	evalModels(modelSets, trials = 3, showImageChoice = True, showTrue = True, saveImage = False, saveAccuracy = False, allValid = False)
+	evalModels(modelSets, trials = 10, showImageChoice = False, showTrue = True, saveImage = False, saveAccuracy = False, allValid = False)
 	#accuracyPlot(modelSets, True)
