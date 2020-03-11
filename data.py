@@ -120,12 +120,11 @@ def coordsTrainingGenerator(model, batchSize, masterList = None, height = 480, w
 			i += 1
 		yield (np.array(xBatch), np.array(yCoordBatch))
 
-# for data aug, get random horizontal, vertical flips, flip input x with np, label vals = 1 - labelvals, flip mask
-def combinedTrainingGeneratorAug(model, batchSize, masterList = None, height = 480, width = 640, out0 = 'activation_9', out1 = 'activation_10', augmentation = True, altLabels = True): # take input image, resize and store as rgb, create training data
+
+def combinedTrainingGenerator(model, batchSize, masterList = None, height = 480, width = 640, out0 = 'activation_9', out1 = 'activation_10', augmentation = True, altLabels = True): # take input image, resize and store as rgb, create training data
 	basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + model
 	if masterList == None:
 		masterList = getMasterList(basePath)
-		random.shuffle(masterList)
 	i = 0
 	while True:
 		xBatch = []
@@ -135,7 +134,6 @@ def combinedTrainingGeneratorAug(model, batchSize, masterList = None, height = 4
 			if i == len(masterList):
 				i = 0
 				random.shuffle(masterList)
-			
 			x = filePathToArray(basePath + '\\JPEGImages\\' + masterList[i][0], height, width)
 			
 			with open(basePath + ('\\altLabels\\' if altLabels else '\\labels\\') + masterList[i][2]) as f:
@@ -147,7 +145,7 @@ def combinedTrainingGeneratorAug(model, batchSize, masterList = None, height = 4
 			
 			modelMask = filePathToArray(basePath + '\\mask\\' + masterList[i][1], height, width)
 			
-			if augmentation:
+			if augmentation: # for data aug, get random horizontal, vertical flips, flip input x with np, label vals = 1 - labelvals, flip mask
 				if random.choice([True, False]): # vertical flip
 					x = np.flipud(x)
 					modelMask = np.flipud(modelMask)
@@ -158,46 +156,11 @@ def combinedTrainingGeneratorAug(model, batchSize, masterList = None, height = 4
 					modelMask = np.fliplr(modelMask)
 					for i in range(len(labels) // 2):
 						labels[i * 2] = str(round(1 - float(labels[i * 2]), 6))
-			#showArrayAsImage(modelMask, 1, 'RGB')
+			
 			modelCoords = np.where(modelMask == 255)[:2]
 			for modelCoord in zip(modelCoords[0][::3], modelCoords[1][::3]):
 				setTrainingPixel(yCoordsLabels, modelCoord[0], modelCoord[1], labels, height, width)
 				yClassLabels[modelCoord[0]][modelCoord[1]][0] = 1
-			xBatch.append(x)
-			yCoordBatch.append(yCoordsLabels)
-			yClassBatch.append(yClassLabels)
-			i += 1
-		yield (np.array(xBatch), {out0: np.array(yCoordBatch), out1 : np.array(yClassBatch)})
-
-def combinedTrainingGenerator(model, batchSize, masterList = None, height = 480, width = 640, out0 = 'activation_9', out1 = 'activation_10'): # take input image, resize and store as rgb, create training data
-	basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + model
-	if masterList == None:
-		masterList = getMasterList(basePath)
-	i = 0
-	while True:
-		xBatch = []
-		yCoordBatch = []
-		yClassBatch = []
-		for b in range(batchSize):
-			if i == len(masterList):
-				i = 0
-				random.shuffle(masterList)
-			x = filePathToArray(basePath + '\\JPEGImages\\' + masterList[i][0], height, width)
-			
-			with open(basePath + '\\labels\\' + masterList[i][2]) as f:
-				labels = f.readline().split(' ')[1:19]
-			
-			yCoordsLabels = np.zeros((height, width, 18)) # 9 coordinates
-			yClassLabels = np.zeros((height, width, 1)) # 1 class confidence value per model
-			#yClassLabels = np.tile(np.array([1, 0]),(height, width, 1))
-			
-			modelMask = filePathToArray(basePath + '\\mask\\' + masterList[i][1], height, width)
-			#showArrayAsImage(modelMask, 1, 'RGB')
-			modelCoords = np.where(modelMask == 255)[:2]
-			for modelCoord in zip(modelCoords[0][::3], modelCoords[1][::3]):
-				setTrainingPixel(yCoordsLabels, modelCoord[0], modelCoord[1], labels, height, width)
-				yClassLabels[modelCoord[0]][modelCoord[1]][0] = 1
-				#yClassLabels[modelCoord[0]][modelCoord[1]] = np.array([0, 1])
 			xBatch.append(x)
 			yCoordBatch.append(yCoordsLabels)
 			yClassBatch.append(yClassLabels)
