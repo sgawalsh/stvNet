@@ -1,0 +1,2 @@
+epoch,classOut_accuracy,classOut_loss,coordsOut_loss,coordsOut_mae,coordsOut_mse,loss
+0,0.7922001,1.6728456,0.2828156,0.6019538,0.7578409,1.9273183587668599
