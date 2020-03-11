@@ -31,13 +31,6 @@ def convLayer(x, numFilters, kernelSize, strides = 1, dilation = 1):
 	
 	return x
 	
-def cbrBlock(x, filters, kernel):
-	x = tf.keras.layers.Conv2D(filters, kernel, kernel_initializer = tf.keras.initializers.GlorotUniform(seed=0), padding = 'same')(x)
-	x = tf.keras.layers.BatchNormalization()(x)
-	x = tf.keras.layers.Activation('relu')(x)
-	
-	return x
-	
 def stvNet(inputShape = (480, 640, 3), outVectors = True, outClasses = True, modelName = "stvNet"):
 	
 	xIn = tf.keras.Input(inputShape, dtype = np.dtype('uint8'))
@@ -106,23 +99,23 @@ def stvNet(inputShape = (480, 640, 3), outVectors = True, outClasses = True, mod
 	
 	x = tf.keras.layers.Add()([x, skip])
 	
-	x = cbrBlock(x, 256, 3)
-	x = cbrBlock(x, 256, 3)
+	x = convLayer(x, 256, 3)
+	x = convLayer(x, 256, 3)
 	
 	x = tf.keras.layers.Add()([x, res4])
 	x = tf.keras.layers.UpSampling2D()(x)
 	
-	x = cbrBlock(x, 128, 3)
+	x = convLayer(x, 128, 3)
 	
 	x = tf.keras.layers.Add()([x, res3])
 	x = tf.keras.layers.UpSampling2D()(x)
 	
-	x = cbrBlock(x, 64, 3)
+	x = convLayer(x, 64, 3)
 	
 	x = tf.keras.layers.Add()([x, res2])
 	x = tf.keras.layers.UpSampling2D()(x)
 	
-	x = cbrBlock(x, 32, 3)
+	x = convLayer(x, 32, 3)
 	
 	outputs = []
 	
@@ -201,25 +194,25 @@ def stvNetNew(inputShape = (480, 640, 3), outVectors = True, outClasses = True, 
 	
 	x = tf.keras.layers.Add()([x, skip])
 	
-	x = cbrBlock(x, 256, 3)
-	x = cbrBlock(x, 256, 3)
+	x = convLayer(x, 256, 3)
+	x = convLayer(x, 256, 3)
 	
 	x = tf.keras.layers.Add()([x, res4])
 	x = tf.keras.layers.UpSampling2D()(x)
 	
-	x = cbrBlock(x, 128, 3)
+	x = convLayer(x, 128, 3)
 	
 	x = tf.keras.layers.Add()([x, res3])
 	x = tf.keras.layers.UpSampling2D()(x)
 	
-	x = cbrBlock(x, 64, 3)
+	x = convLayer(x, 64, 3)
 	
 	x = tf.keras.layers.Add()([x, res2])
 	x = tf.keras.layers.UpSampling2D()(x)
 	
 	x = tf.keras.layers.Add()([x, res1])
 	
-	x = cbrBlock(x, 32, 3)
+	x = convLayer(x, 32, 3)
 	
 	outputs = []
 	
