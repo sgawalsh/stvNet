@@ -10,16 +10,13 @@ maskThreshold = .9 # min value for pixel to be included in population of ransac 
 pruneBool = True # flag to perform pruning operation
 pruneRatio = .5 # percent of smallest weighted hypotheses to be pruned
 noiseScale = .1 # artificially add noise to true target data, used for testing pnp accuracy
+minHyps = 25
 checkQuads = True
 
 def predictPose(coords, classes, showClassPred = False, labels = False, addNoise = False, modelName = 'cat', checkPreds = False, altLabels = True, pruning = True):
 	if showClassPred: # display class prediction
-		#print(classPred)
-		#displayMaskChoice(classPred)
-		#data.showArrayAsImage(classes)
 		showImage(classes)
 
-	#showImage(classes)
 	population = np.where(classes > maskThreshold)[:2]
 	if not len(population):
 		return False, None
@@ -35,8 +32,9 @@ def predictPose(coords, classes, showClassPred = False, labels = False, addNoise
 	hypDict = ransacVoting(population, coords)
 	
 	if pruning:
-		#pruneHypsRatio(hypDict)
-		pruneHypsStdDev(hypDict)
+		pruneHypsRatio(hypDict)
+		#pruneHypsStdDev(hypDict)
+		pass
 	
 	meanDict = getMean(hypDict)
 	
@@ -79,12 +77,13 @@ def ransacVoting(population, coords): # ransac voting to generate 2d keypoint hy
 			m1 = v1[i * 2 + 1] / v1[i * 2] # get slopes
 			m2 = v2[i * 2 + 1] / v2[i * 2]
 			if not (m1 - m2): # lines must intersect
+				print('slope cancel')
 				continue
 			b1 = p1[0] - p1[1] * m1 # get y intercepts
 			b2 = p2[0] - p2[1] * m2
 			x = (b2 - b1) / (m1 - m2)
 			y = m1 * x + b1
-			if checkQuads and (y >= p1[0] != v1[i * 2 + 1] < 0 or x >= p1[1] != v1[i * 2] < 0 or y >= p2[0] != v2[i * 2 + 1] < 0 or y >= p2[1] != v2[i * 2] < 0): # check if line intersection takes place according to unit vector directions
+			if checkQuads and (y >= p1[0] != v1[i * 2 + 1] < 0 or x >= p1[1] != v1[i * 2] < 0 or y >= p2[0] != v2[i * 2 + 1] < 0 or x >= p2[1] != v2[i * 2] < 0): # check if line intersection takes place according to unit vector directions
 				continue
 			#print(y, x)
 			weight = 0
@@ -102,7 +101,51 @@ def ransacVoting(population, coords): # ransac voting to generate 2d keypoint hy
 		population.append(p1)
 		population.append(p2)
 		
+	for key, hyp in hypDict.items():
+		while len(hyp) < minHyps:
+			set_trace()
+			p1, p2, v1, v2 = getCoordsAndVecs(population, coords)
+			retVal = genHyp(p1, p2, v1, v2, population, coords, key)
+			if retVal:
+				hypDict[key].append(retVal)
+		
 	return hypDict
+	
+def getCoordsAndVecs(population, coords):
+	p1 = population.pop(random.randrange(len(population)))
+	v1 = coords[p1[0]][p1[1]]
+	p2 = population.pop(random.randrange(len(population)))
+	v2 = coords[p2[0]][p2[1]]
+	
+	return p1, p2, v1, v2
+	
+def genHyp(p1, p2, v1, v2, population, coords, i):
+	m1 = v1[i * 2 + 1] / v1[i * 2] # get slopes
+	m2 = v2[i * 2 + 1] / v2[i * 2]
+	if not (m1 - m2): # lines must intersect
+		return
+	b1 = p1[0] - p1[1] * m1 # get y intercepts
+	b2 = p2[0] - p2[1] * m2
+	x = (b2 - b1) / (m1 - m2)
+	y = m1 * x + b1
+	if checkQuads and (y >= p1[0] != v1[i * 2 + 1] < 0 or x >= p1[1] != v1[i * 2] < 0 or y >= p2[0] != v2[i * 2 + 1] < 0 or x >= p2[1] != v2[i * 2] < 0): # check if line intersection takes place according to unit vector directions
+		return
+
+	weight = 0
+	for voter in population: # voting for fit of hypothesis
+		yDiff = y - voter[0]
+		xDiff = x - voter[1]
+		
+		mag = math.sqrt(yDiff ** 2 + xDiff ** 2)
+		vec = coords[voter[0]][voter[1]][i * 2: i * 2 + 2]
+		
+		if ransacVal(yDiff / mag, xDiff / mag, vec) > ransacThreshold:
+			weight += 1
+
+	population.append(p1)
+	population.append(p2)
+
+	return ((y, x), weight)
 	
 def ransacVal(y1, x1, v2): # dot product of unit vectors to find cos(theta difference)
 	v2 = v2 / np.linalg.norm(v2)
@@ -394,9 +437,9 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 				pickle.dump({'true': trueList, 'pred': predList}, f)
 
 if __name__ == "__main__" :
-	#modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords_alt'}), modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords'})]
+	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords_alt'}), modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords'})]
 	#modelSets = [modelSet('stvNetAltLabels'), modelSet('stvNetNormLabels')]
 	#evalModels(modelSets, allValid = True)
-	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords_alt'})]
-	evalModels(modelSets, trials = 10, showImageChoice = False, showTrue = True, saveImage = False, saveAccuracy = False, allValid = False)
+	#modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords_alt'})]
+	evalModels(modelSets, trials = 10, showImageChoice = False, showTrue = True, saveImage = True, saveAccuracy = False, allValid = False)
 	#accuracyPlot(modelSets, True)
