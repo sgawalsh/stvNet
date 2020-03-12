@@ -538,6 +538,6 @@ if __name__ == "__main__" :
 	
 	#evaluateModels(modelSets)
 	#loadHistories(modelSets)
-	trainModels(modelSets, True)
+	trainModels(modelSets)
 	#plotHistories(modelSets)
 	pass
