@@ -354,7 +354,7 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 		
 	return model
 
-def trainModels(nameList, shutDown):
+def trainModels(modelSets, shutDown = False):
 	for modelSet in modelSets:
 		print("Training {0}".format(modelSet.name))
 		model = modelsDict[modelSet.name]
