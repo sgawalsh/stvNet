@@ -2,7 +2,7 @@
 
 ## Overview
 
-The goal of this project was to implement the 6D Pose Estimation solution described in the [PVNet](https://arxiv.org/abs/1812.11788) paper.
+The goal of this project was to implement the 6D Pose Estimation solution described in the [PVNet](https://arxiv.org/abs/1812.11788) paper, to detect the 6d pose of an object of interest relative to a camera. [Sample](https://github.com/sgawalsh/stvNet/blob/master/savedImages/uNet_classes_x_stvNet_new_coords_alt%20-%200_ratioPruning.jpg)
 
 The main code is contained in 3 python files. ```models.py``` contains the neural net models, implemented using tensorflow and keras, as well as code for training models and saving and displaying model performance metrics. The ```data.py``` file contains the code used to convert the data provided in the LINEMOD dataset, to the actual objects used as target data for the neural networks. The file also contains the generator functions used to serve the training data. The ```pipeLine.py``` file implements the algorithm as described in the PVNet paper.
 
@@ -46,4 +46,4 @@ The mask folder contains a corresponding set of images that are made up of black
 
 The labels folder contains a corresponding `.txt` file for each image in `JPEGImages`, which gives information on the pixel location of the 9 bounding box keypoints. The format of these files is `{object classification tag} {x1} {y1} {x2} {y2} ... {x9} {y9}` the object classification tag denotes the object associated with the coordinates. Each of the x or y values is a value between 0 and 1 that gives the relative coordinate on the image (e.x. if x1 and y1 are .1 and .5 on a 640x480 image, the keypoint is located at pixel (64, 240)). In all generators we generate a `modelMask` array, and for each pixel belonging to the object of interest, we calculate a unit vector from the pixel to each 2d keypoint. The end result is a (HxWx18) array, containing a set of 9 unit vectors for each pixel that belongs to the object.
 
-This project structure could be used on a custom object object given a dataset of the same format for the object. That is: a set of photos of the object of interest, a corresponding set of object masks of those photos identifying which pixels belong to the object, and a corresponding set of .txt files which give the 2d pixel locations of a set of 3d keypoints. A file containing the corresponding keypoint locations in a 3d cooridinate system should also be included for the PNP function.
+This project structure could be used on a custom object object given a dataset of the same format for the object. That is: a set of photos of the object of interest, a corresponding set of object masks of those photos identifying which pixels belong to the object, and a corresponding set of .txt files which give the 2d pixel locations of a set of 3d keypoints. A file containing the corresponding keypoint locations in a 3d coordinate system should also be included for the PNP function.
