@@ -1,0 +1,2 @@
+model_checkpoint_path: "stvNet_new_coords_cat"
+all_model_checkpoint_paths: "stvNet_new_coords_cat"
