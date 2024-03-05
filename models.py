@@ -342,7 +342,8 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 	
 	if saveModel:
 		model.save_weights(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
-		model.save(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
+		chunkify(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
+		#model.save(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
 		if not os.path.exists("models\\history\\" + modelName + '_trainHistory'):
 			with open("models\\history\\" + modelName + '_' + modelClass + '_trainHistory', 'wb') as f: # create model history
 				pickle.dump([], f)
@@ -353,6 +354,33 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 			pickle.dump(histories, f)
 		
 	return model
+
+def chunkify(input_file, chunk_size = 104856576 ):
+	with open(input_file + '.data-00000-of-00001', 'rb') as f:
+		chunk_num = 0
+		while True:
+			chunk = f.read(chunk_size)
+			if not chunk:
+				break
+			with open(f'{input_file}.part-{chunk_num}', 'wb') as chunk_file:
+				chunk_file.write(chunk)
+			chunk_num += 1
+
+	os.remove(input_file + '.data-00000-of-00001')
+
+def joinFiles(input_file, model):
+	with open(input_file + '.data-00000-of-00001', 'wb') as combined:
+		chunk_num = 0
+		while True:
+			try:
+				with open(f'{input_file}.part-{chunk_num}', 'rb') as f:
+					combined.write(f.read())
+					chunk_num += 1
+			except FileNotFoundError:
+				break
+	
+	model.load_weights(input_file)
+	os.remove(input_file + '.data-00000-of-00001')
 
 def trainModels(modelSets, shutDown = False):
 	for modelSet in modelSets:
@@ -377,38 +405,19 @@ def evaluateModels(modelSets, batchSize = 2, dataSplit = True):
 		modelEnt = modelsDict[modelSet.name]
 		model = loadModelWeights(modelEnt.structure, modelSet.name, modelSet.modelClass, modelEnt.outVectors, modelEnt.outClasses, losses = modelEnt.losses, metrics = modelEnt.metrics)
 		if type(model.losses) is dict:
-			outKeys = list(losses.keys())
+			outKeys = list(model.losses.keys())
 			if len(outKeys) == 2: # combined output
 				model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], altLabels = modelEnt.altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
 			else:
 				raise Exception("Probably shouldn't be here ever..")
 		else:
 			model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, altLabels = modelEnt.altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
-	
-def trainModelClassGen(modelStruct, modelName, losses, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learningRate = 0.001, metrics = ['accuracy'], epochs = 1, outVectors = False, outClasses = False, outVecName = None, outClassName = None): # simulates generator behaviour, unused
-	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
-	#model.summary()
-	model.compile(optimizer = optimizer(learning_rate = learningRate), loss = losses, metrics = metrics)
-	
-	myGen = generatorClass(modelClass, outVectors = outVectors, outClasses = outClasses, outVecName = outVecName, outClassName = outClassName)
-	logger = tf.keras.callbacks.CSVLogger("models\\history\\" + modelName + "_" + modelClass + "_history.csv", append = True)
-	
-	for i in range(epochs):
-		print("Epoch {0} of {1}".format(i + 1, epochs))
-		while True:
-			epochEnd, x, y = myGen.serveBatch()
-			if epochEnd:
-				break
-			model.fit(x, y, callbacks = [logger], verbose = 0)
-			#update_progress(myGen.i / myGen.dataLength)
-			
-	return model
 
 def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = False, outClasses = False, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']): # return compiled tf keras model
 	if not (outVectors or outClasses):
 		raise Exception("At least one of outVectors or outClasses must be set to True.")
 	model = modelStruct(outVectors = outVectors, outClasses = outClasses, modelName = modelName)
-	model.load_weights(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
+	joinFiles(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass, model)
 	model.compile(optimizer = optimizer(learning_rate = learning_rate), loss = losses, metrics = metrics)
 	return model
 
@@ -453,59 +462,6 @@ def plotHistories(modelSets): # display loss values over epochs using pyplot
 	plt.legend()
 	plt.show()
 	plt.close()
-
-class generatorClass: # simulates generator behaviour, unused
-	
-	def __init__(self, modelClass, height = 480, width = 640, batchSize = 2, outVectors = False, outClasses = False, outVecName = None, outClassName = None):
-		if not (outClasses or outVectors):
-			raise Exception("Must have at least one output")
-		self.i = 0
-		self.basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelClass
-		self.masterList = getMasterList(self.basePath)
-		self.dataLength = len(self.masterList)
-		self.height = height
-		self.width = width
-		self.outVectors = outVectors
-		self.outClasses = outClasses
-		self.outVecName = outVecName
-		self.outClassName = outClassName
-		self.batchSize = batchSize
-		
-	def serveBatch(self):
-		xBatch = []
-		yCoordBatch = []
-		yClassBatch = []
-		output = {}
-		
-		for b in range(self.batchSize):
-			if self.i == self.dataLength:
-				self.i = 0
-				random.shuffle(self.masterList)
-				return True, [], [], []
-			x = filePathToArray(self.basePath + '\\JPEGImages\\' + self.masterList[self.i][0], self.height, self.width)
-			
-			with open(self.basePath + '\\labels\\' + self.masterList[self.i][2]) as f:
-				labels = f.readline().split(' ')[1:19]
-			
-			yCoordsLabels = np.zeros((self.height, self.width, 18)) # 9 coordinates
-			yClassLabels = np.zeros((self.height, self.width, 1)) # 1 class confidence value per model
-			
-			modelMask = filePathToArray(self.basePath + '\\mask\\' + self.masterList[self.i][1], self.height, self.width)
-			modelCoords = np.where(modelMask == 255)[:2]
-			
-			for modelCoord in zip(modelCoords[0][::3], modelCoords[1][::3]):
-				setTrainingPixel(yCoordsLabels, modelCoord[0], modelCoord[1], labels, self.height, self.width)
-				yClassLabels[modelCoord[0]][modelCoord[1]][0] = 1
-			xBatch.append(x)
-			yCoordBatch.append(yCoordsLabels)
-			yClassBatch.append(yClassLabels)
-			self.i += 1
-			
-		if self.outVectors:
-			output[self.outVecName] = np.array(yCoordBatch)
-		if self.outClasses:
-			output[self.outClassName] = np.array(yClassBatch)
-		return (False, np.array(xBatch), output)
 			
 modelsDict = {
 	'uNet_classes' : modelDictVal(uNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
@@ -515,14 +471,14 @@ modelsDict = {
 	'stvNet_coords_slow_learner' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 40, lr = 0.00001, metrics = ['mae', 'mse'], outVecName = 'coordsOut'),
 	'stvNetAltLabels' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 10, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, altLabels = True, augmentation = True),
 	'stvNetNormLabels' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 10, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, altLabels = False, augmentation = True),
-	'stvNet_coords' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
+	'stvNet_coords' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 2, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
 	'stvNet_coords_altLabels' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = True),
 	'stvNet_coords_altLabels_noAug' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = False),
 	'stvNet_coords_noAug' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False),
 	'stvNet_classes' : modelDictVal(stvNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 10, lr = 0.001, altLabels = False, augmentation = True),
 	'stvNet_classes_noAug' : modelDictVal(stvNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 10, lr = 0.001, altLabels = False, augmentation = False),
 	'stvNet_new_coords_alt' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = False),
-	'stvNet_new_coords' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False),
+	'stvNet_new_coords' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False),
 	'stvNet_new_coords_alt_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = True),
 	'stvNet_new_coords_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
 	'stvNet_new_classes' : modelDictVal(stvNetNew, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
@@ -530,14 +486,9 @@ modelsDict = {
 }
 	
 if __name__ == "__main__" :
-	#modelSets = [modelSet('stvNet_coords_altLabels'), modelSet('stvNet_coords_noAug'), modelSet('stvNet_coords_altLabels_noAug'), modelSet('stvNet_coords'), modelSet('stvNet_new_coords_alt'), modelSet('stvNet_new_coords_aug'), modelSet('stvNet_new_coords')] # vector outputs
-	#modelSets = [modelSet('stvNet_new_classes'), modelSet('uNet_classes'), modelSet('stvNet_classes')] # class outputs
-	modelSets = [modelSet('stvNet_new_combined')]
-	
-	#modelSets = [modelSet('stvNet_new_coords_alt')]
+	modelSets = [modelSet('stvNet_new_coords')]
+	trainModels(modelSets)
 	
 	#evaluateModels(modelSets)
 	#loadHistories(modelSets)
-	trainModels(modelSets)
 	#plotHistories(modelSets)
-	pass
