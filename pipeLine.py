@@ -1,6 +1,5 @@
-import models, os, random, data, numpy as np, matplotlib.pyplot as plt, tensorflow as tf, math, cv2, json, pickle, statistics
+import models, os, random, data, numpy as np, matplotlib.pyplot as plt, tensorflow as tf, math, cv2, pickle, statistics
 from pdb import set_trace
-from PIL import Image
 from skimage.io import imshow, imread
 from classes import modelSet, modelWrapper
 

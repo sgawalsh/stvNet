@@ -1,8 +1,5 @@
-import os, pandas as pd, numpy as np, tensorflow as tf, math, random, matplotlib.pyplot as plt, sys, pickle, cv2
+import os, numpy as np, math, random, matplotlib.pyplot as plt, pickle, cv2
 from PIL import Image
-from pdb import set_trace
-from matplotlib import pyplot
-from decimal import Decimal
 from skimage.io import imshow
 
 def getRandomImage(modelClass = 'cat'): # retrieves random image and label set

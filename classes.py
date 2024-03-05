@@ -1,5 +1,3 @@
-import random
-
 class modelSet:
 	
 	def __init__(self, modelName, modelClass = 'cat'):

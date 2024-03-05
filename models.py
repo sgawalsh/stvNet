@@ -1,5 +1,4 @@
-import tensorflow as tf, numpy as np, data, os, math, pickle, sys, matplotlib.pyplot as plt
-from pdb import set_trace
+import tensorflow as tf, numpy as np, data, os, math, pickle, matplotlib.pyplot as plt
 from datetime import datetime
 from tensorflow.keras import backend as K
 from classes import modelSet, modelDictVal
