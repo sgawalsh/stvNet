@@ -171,7 +171,7 @@ def getMeanArray(inDict):
 	
 def displayMaskChoice(inArray): # used for mask output of shape (height, width, 2)
 	outArray = [ [1 if x[1] >= x[0] else 0 for x in y] for y in inArray]
-	showArrayAsImage(np.array(outArray))
+	data.showArrayAsImage(np.array(outArray))
 
 def showImage(img): # displays image using plt
 	plt.figure()
