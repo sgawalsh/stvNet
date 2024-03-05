@@ -31,7 +31,7 @@ class modelWrapper: # allows user to use single-net and double-net model interch
 
 class modelDictVal:
 	
-	def __init__(self, structure, generator, losses, outVectors, outClasses, epochs = 3, lr = 0.01, metrics = ['accuracy'], outVecName = None, outClassName = None, altLabels = True, augmentation = True):
+	def __init__(self, structure, generator, losses, outVectors, outClasses, epochs = 3, lr = 0.01, metrics = ['accuracy'], outVecName = None, outClassName = None, altLabels = False, augmentation = True):
 		self.structure = structure
 		self.generator = generator
 		self.losses = losses

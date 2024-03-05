@@ -185,7 +185,7 @@ def testModelMask(modelName, modelStruct, tests = 5, modelClass = 'cat', outClas
 		return
 	
 	model = modelStruct(outVectors = outVectors, outClasses = outClasses)
-	model.load_weights(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass)
+	models.joinFiles(os.path.dirname(os.path.realpath(__file__)) + '\\models\\' + modelName + '_' + modelClass, model)
 	model.summary()
 	
 	#model = tf.keras.models.load_model(modelStruct, modelName, modelClass = modelClass, outVectors = outVectors, outClasses = outClasses, optimizer = optimizer, learning_rate = learning_rate, losses = losses, metrics = metrics)
@@ -394,9 +394,7 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 				pickle.dump({'true': trueList, 'pred': predList}, f)
 
 if __name__ == "__main__" :
-	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords_alt'}), modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords'})]
-	#modelSets = [modelSet('stvNetAltLabels'), modelSet('stvNetNormLabels')]
-	#evalModels(modelSets, allValid = True)
-	#modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords_alt'})]
-	evalModels(modelSets, trials = 10, showImageChoice = False, showTrue = True, saveImage = False, saveAccuracy = False, allValid = False)
+	# modelSets = [modelSet('stvNet_new_combined')] # combined model
+	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords'})] #separate models
+	evalModels(modelSets, trials = 10, showImageChoice = True, showTrue = True, saveImage = False, saveAccuracy = False, allValid = False)
 	#accuracyPlot(modelSets, True)

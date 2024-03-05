@@ -121,7 +121,7 @@ def coordsTrainingGenerator(model, batchSize, masterList = None, height = 480, w
 		yield (np.array(xBatch), np.array(yCoordBatch))
 
 
-def combinedTrainingGenerator(model, batchSize, masterList = None, height = 480, width = 640, out0 = 'activation_9', out1 = 'activation_10', augmentation = True, altLabels = True): # take input image, resize and store as rgb, create training data
+def combinedTrainingGenerator(model, batchSize, masterList = None, height = 480, width = 640, out0 = 'activation_9', out1 = 'activation_10', augmentation = True, altLabels = False): # take input image, resize and store as rgb, create training data
 	basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + model
 	if masterList == None:
 		masterList = getMasterList(basePath)
