@@ -1,6 +1,5 @@
 import os, numpy as np, math, random, matplotlib.pyplot as plt, pickle, cv2
 from PIL import Image
-from skimage.io import imshow
 
 def getRandomImage(modelClass = 'cat'): # retrieves random image and label set
 	basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelClass
@@ -11,7 +10,6 @@ def getRandomImage(modelClass = 'cat'): # retrieves random image and label set
 		labels = f.readline().split(' ')[1:19]
 	print(image)
 	image = filePathToArray(basePath + '\\JPEGImages\\' + image)
-	#image = imread(basePath + image)
 	return image, labels
 
 def getDataSplitImage(getValid, modelClass = 'cat'): # retrieves random image and label set from specified dataset
@@ -209,7 +207,7 @@ def showKeypoints(model = 'cat', batchSize = 2, height = 480, width = 640): # di
 			temp = np.array(x[py][px])
 			x[py][px] = np.array([0,0,0])
 			plt.figure()
-			imshow(np.squeeze(x))
+			plt.imshow(np.squeeze(x))
 			plt.show()
 			x[py][px] = temp
 		i += 1
@@ -283,7 +281,7 @@ def genAltLabels(p3dOld, p3dNew, matrix = np.array([[572.4114, 0., 325.2611], [0
 				temp = np.array(image[py][px])
 				image[py][px] = np.array([0,0,0])
 				plt.figure()
-				imshow(np.squeeze(image))
+				plt.imshow(np.squeeze(image))
 				plt.show()
 				image[py][px] = temp
 			newLabels.append(coord[0][0] / width)

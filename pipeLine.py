@@ -1,6 +1,6 @@
 import models, os, random, data, numpy as np, matplotlib.pyplot as plt, tensorflow as tf, math, cv2, pickle, statistics
 from pdb import set_trace
-from skimage.io import imshow, imread
+from PIL import Image
 from classes import modelSet, modelWrapper
 
 numHypotheses = 50 #  hypotheses considered for each keypoint
@@ -54,7 +54,7 @@ def predictPose(coords, classes, showClassPred = False, labels = False, addNoise
 			temp = np.array(checkPreds[py][px])
 			checkPreds[py][px] = np.array([0,0,0])
 			#plt.figure()
-			#imshow(np.squeeze(checkPreds))
+			#plt.imshow(np.squeeze(checkPreds))
 			#plt.show()
 			checkPreds[py][px] = temp
 			
@@ -175,7 +175,7 @@ def displayMaskChoice(inArray): # used for mask output of shape (height, width, 
 
 def showImage(img): # displays image using plt
 	plt.figure()
-	imshow(np.squeeze(img))
+	plt.imshow(np.squeeze(img))
 	plt.show()
 
 def testModelMask(modelName, modelStruct, tests = 5, modelClass = 'cat', outClasses = False, outVectors = False, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']): # tests mask model output
@@ -193,15 +193,15 @@ def testModelMask(modelName, modelStruct, tests = 5, modelClass = 'cat', outClas
 	plt.figure()
 	for i in range(tests):
 		randNum = random.randrange(len(os.listdir(basePath + '\\JPEGImages\\')))
-		orig = imread(basePath + '\\JPEGImages\\' + os.listdir(basePath + '\\JPEGImages\\')[randNum])
+		orig = Image.open(basePath + '\\JPEGImages\\' + os.listdir(basePath + '\\JPEGImages\\')[randNum])
 		#orig2 = data.filePathToArray(basePath + '\\JPEGImages\\' + os.listdir(basePath + '\\JPEGImages\\')[randNum])
 		pred = model.predict(np.array([orig]))
 		
 		plt.subplot(211)
-		imshow(orig)
+		plt.imshow(orig)
 		
 		plt.subplot(212)
-		imshow(np.squeeze(pred))
+		plt.imshow(np.squeeze(pred))
 		plt.show()
 
 def pnp(p3d, p2d, drawPoints, matrix = np.array([[572.4114, 0., 325.2611], [0., 573.57043, 242.04899], [0., 0., 1.]]), method = cv2.SOLVEPNP_ITERATIVE):
