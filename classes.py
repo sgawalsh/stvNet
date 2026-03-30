@@ -6,7 +6,7 @@ class modelSet:
 
 class modelWrapper: # allows user to use single-net and double-net model interchangeably 
 	
-	def __init__(self, models, altLabels):
+	def __init__(self, models, bb8Labels):
 		if type(models) is dict:
 			if len(models.keys()) == 2:
 				self.classModel = models['classModel']
@@ -18,7 +18,7 @@ class modelWrapper: # allows user to use single-net and double-net model interch
 			self.combModel = models
 			self.combined = True
 		
-		self.altLabels = altLabels
+		self.bb8Labels = bb8Labels
 	
 	def genPredict(self, input):
 		if self.combined:
@@ -29,7 +29,7 @@ class modelWrapper: # allows user to use single-net and double-net model interch
 
 class modelDictVal:
 	
-	def __init__(self, structure, generator, losses, outVectors, outClasses, epochs = 3, lr = 0.01, metrics = ['accuracy'], outVecName = None, outClassName = None, altLabels = False, augmentation = True):
+	def __init__(self, structure, generator, losses, outVectors, outClasses, epochs = 3, lr = 0.01, metrics = ['accuracy'], outVecName = None, outClassName = None, bb8Labels = True, augmentation = True):
 		self.structure = structure
 		self.generator = generator
 		self.losses = losses
@@ -40,5 +40,5 @@ class modelDictVal:
 		self.lr = lr
 		self.outVecName = outVecName
 		self.outClassName = outClassName
-		self.altLabels = altLabels
+		self.bb8Labels = bb8Labels
 		self.augmentation = augmentation

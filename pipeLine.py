@@ -1,5 +1,4 @@
 import models, os, random, data, numpy as np, matplotlib.pyplot as plt, tensorflow as tf, math, cv2, pickle, statistics
-from pdb import set_trace
 from PIL import Image
 from classes import modelSet, modelWrapper
 
@@ -12,7 +11,7 @@ noiseScale = .1 # artificially add noise to true target data, used for testing p
 minHyps = 55
 checkQuads = True
 
-def predictPose(coords, classes, showClassPred = False, labels = False, addNoise = False, modelName = 'cat', checkPreds = False, altLabels = True, pruning = True):
+def predictPose(coords, classes, showClassPred = False, labels = False, addNoise = False, modelName = 'cat', checkPreds = False, bb8Labels = True, pruning = True):
 	if showClassPred: # display class prediction
 		showImage(classes)
 
@@ -38,12 +37,11 @@ def predictPose(coords, classes, showClassPred = False, labels = False, addNoise
 	meanDict = getMean(hypDict)
 	
 	#covarDict = getCovariance(hypDict, meanDict)
-	if altLabels:
-		pts3d = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', 'altPoints.txt'))
-		preds = dictToArray(meanDict)
+	if bb8Labels:
+		pts3d = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', f'{modelName}_bb8.txt'))
 	else:
-		pts3d = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', 'bb8_3d.txt'))
-		preds = dictToArray(meanDict)[1:] # ignoring centroid prediction
+		pts3d = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', f'{modelName}_fps.txt'))
+	preds = dictToArray(meanDict)
 	
 	if checkPreds is not False: # show predicted keypoints on image
 		labelList = data.labelFloatsToPixels(labels)
@@ -219,7 +217,6 @@ def pnp(p3d, p2d, drawPoints, matrix = np.array([[572.4114, 0., 325.2611], [0., 
 								flags=method)
 	except Exception as e:
 		print(e)
-		set_trace()
 		print(p2d)
 
 	#R_exp, t, _ = cv2.solvePnPRansac(p3d,
@@ -323,15 +320,15 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 				classModel = models.modelsDict[modelSet.name['classModel']]
 				classModel = models.loadModelWeights(classModel.structure, modelSet.name['classModel'], modelClass = modelSet.modelClass, outVectors = False, outClasses = True, losses = classModel.losses)
 				vecModel = models.modelsDict[modelSet.name['vecModel']]
-				altLab = vecModel.altLabels
+				bb8Lab = vecModel.bb8Labels
 				vecModel = models.loadModelWeights(vecModel.structure, modelSet.name['vecModel'], modelClass = modelSet.modelClass, outVectors = True, outClasses = False, losses = vecModel.losses)
-				modelWrap = modelWrapper({'classModel': classModel, 'vecModel': vecModel}, altLabels = altLab)
+				modelWrap = modelWrapper({'classModel': classModel, 'vecModel': vecModel}, bb8Labels = bb8Lab)
 				modelName = modelSet.name['classModel'] + '_x_' + modelSet.name['vecModel']
 			else:
 				raise Exception("Probably shouldn't be here ever..")
 		else: # combined model
 			fullModel = models.modelsDict[modelSet.name]
-			modelWrap = modelWrapper(models.loadModelWeights(fullModel.structure, modelSet.name, modelClass = modelSet.modelClass, outVectors = True, outClasses = True, losses = fullModel.losses), altLabels = fullModel.altLabels)
+			modelWrap = modelWrapper(models.loadModelWeights(fullModel.structure, modelSet.name, modelClass = modelSet.modelClass, outVectors = True, outClasses = True, losses = fullModel.losses), bb8Labels = fullModel.bb8Labels)
 			modelName = modelSet.name
 			
 		print("Evaluating {0}:".format(str(modelSet.name)))
@@ -355,7 +352,7 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 			coordsPred, classPred = modelWrap.genPredict(np.array([image]))
 
 			#yPred = predictPose(coordsPred[0], classPred[0], labels = labels, addNoise = addNoise, checkPreds = image)
-			res, yPred = predictPose(coordsPred[0], classPred[0], altLabels = modelWrap.altLabels, pruning = pruneBool)
+			res, yPred = predictPose(coordsPred[0], classPred[0], bb8Labels = modelWrap.bb8Labels, pruning = pruneBool)
 		
 			if not res:
 				print("Couldn't find it..")

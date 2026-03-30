@@ -1,6 +1,6 @@
 import tensorflow as tf, numpy as np, data, os, math, pickle, matplotlib.pyplot as plt
 from datetime import datetime
-from tensorflow.keras import backend as K
+from keras import backend as K
 from classes import modelSet, modelDictVal
 
 huberDelta = .5
@@ -39,9 +39,7 @@ def stvNet(inputShape = (480, 640, 3), outVectors = True, outClasses = True, mod
 	x = tf.keras.layers.Conv2D(64, 7, input_shape = inputShape, kernel_initializer = tf.keras.initializers.GlorotUniform(seed=0), padding = 'same')(x)
 	x = tf.keras.layers.BatchNormalization()(x)
 	x = tf.keras.layers.Activation('relu')(x)
-	
-	res1 = x
-	
+		
 	x = tf.keras.layers.MaxPool2D(pool_size = 3, strides = 2, padding = 'same')(x)
 	
 	skip = x
@@ -287,7 +285,7 @@ def uNet(inputShape = (480, 640, 3), outVectors = True, outClasses = True, model
 	
 	return tf.keras.Model(inputs = [xIn], outputs = outputs, name = modelName)
 	
-def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, altLabels = True, augmentation = True): # train and save model weights
+def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy'], saveModel = True, modelName = 'stvNet_weights', epochs = 1, loss_weights = None, outVectors = False, outClasses = False, dataSplit = True, bb8Labels = True, augmentation = True): # train and save model weights
 	if not (outVectors or outClasses):
 		print("At least one of outVectors or outClasses must be set to True.")
 		return
@@ -309,22 +307,22 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 		if len(outKeys) == 2: # combined output
 			for i in range(epochs):
 				print("Epoch {0} of {1}".format(i + 1, epochs))
-				hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, out0 = outKeys[0], out1 = outKeys[1], altLabels = altLabels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), max_queue_size = 2, callbacks = [logger])
+				hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, out0 = outKeys[0], out1 = outKeys[1], bb8Labels = bb8Labels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), callbacks = [logger])
 				history.append(hist.history)
 				if dataSplit:
 					print("Validation:")
-					valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], altLabels = altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
+					valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], bb8Labels = bb8Labels, augmentation = False), steps = math.ceil(len(validData) / batchSize))
 					valHistory.append(valHist)
 		else:
 			raise Exception("Probably shouldn't be here ever..")
 	else:
 		for i in range(epochs):
 			print("Epoch {0} of {1}".format(i + 1, epochs))
-			hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, altLabels = altLabels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), max_queue_size = 2, callbacks = [logger])
+			hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, bb8Labels = bb8Labels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), callbacks = [logger])
 			history.append(hist.history)
 			if dataSplit:
 				print("Validation:")
-				valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, altLabels = altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
+				valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, bb8Labels = bb8Labels, augmentation = False), steps = math.ceil(len(validData) / batchSize))
 				valHistory.append(valHist)
 		
 	historyLog = {"struct": modelStruct.__name__,
@@ -385,7 +383,7 @@ def trainModels(modelSets, shutDown = False):
 	for modelSet in modelSets:
 		print("Training {0}".format(modelSet.name))
 		model = modelsDict[modelSet.name]
-		trainModel(model.structure, model.generator, modelClass = modelSet.modelClass, epochs = model.epochs, losses = model.losses, modelName = modelSet.name, outClasses = model.outClasses, outVectors = model.outVectors, learning_rate = model.lr, metrics = model.metrics, altLabels = model.altLabels, augmentation = model.augmentation)
+		trainModel(model.structure, model.generator, modelClass = modelSet.modelClass, epochs = model.epochs, losses = model.losses, modelName = modelSet.name, outClasses = model.outClasses, outVectors = model.outVectors, learning_rate = model.lr, metrics = model.metrics, bb8Labels = model.bb8Labels, augmentation = model.augmentation)
 		
 		K.clear_session()
 		K.reset_uids()
@@ -406,11 +404,11 @@ def evaluateModels(modelSets, batchSize = 2, dataSplit = True):
 		if type(model.losses) is dict:
 			outKeys = list(model.losses.keys())
 			if len(outKeys) == 2: # combined output
-				model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], altLabels = modelEnt.altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
+				model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], bb8Labels = modelEnt.bb8Labels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
 			else:
 				raise Exception("Probably shouldn't be here ever..")
 		else:
-			model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, altLabels = modelEnt.altLabels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
+			model.evaluate(modelEnt.generator(modelSet.modelClass, batchSize = batchSize, masterList = validData, bb8Labels = modelEnt.bb8Labels, augmentation = False), steps = math.ceil(len(validData) / batchSize), max_queue_size = 2)
 
 def loadModelWeights(modelStruct, modelName, modelClass = 'cat', outVectors = False, outClasses = False, optimizer = tf.keras.optimizers.Adam, learning_rate = 0.01, losses = None, metrics = ['accuracy']): # return compiled tf keras model
 	if not (outVectors or outClasses):
@@ -468,24 +466,24 @@ modelsDict = {
 	'uNet_coords_smooth' : modelDictVal(uNet, data.coordsTrainingGenerator, smoothL1, True, False, epochs = 3, lr = 0.0001, metrics = ['mae', 'mse']),
 	'stvNet' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 5, lr = 0.00005, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}),
 	'stvNet_coords_slow_learner' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 40, lr = 0.00001, metrics = ['mae', 'mse'], outVecName = 'coordsOut'),
-	'stvNetAltLabels' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 10, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, altLabels = True, augmentation = True),
-	'stvNetNormLabels' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 10, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, altLabels = False, augmentation = True),
-	'stvNet_coords' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 2, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
-	'stvNet_coords_altLabels' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = True),
-	'stvNet_coords_altLabels_noAug' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = False),
-	'stvNet_coords_noAug' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False),
-	'stvNet_classes' : modelDictVal(stvNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 10, lr = 0.001, altLabels = False, augmentation = True),
-	'stvNet_classes_noAug' : modelDictVal(stvNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 10, lr = 0.001, altLabels = False, augmentation = False),
-	'stvNet_new_coords_alt' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = False),
-	'stvNet_new_coords' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = False),
-	'stvNet_new_coords_alt_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = True, augmentation = True),
-	'stvNet_new_coords_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], altLabels = False, augmentation = True),
-	'stvNet_new_classes' : modelDictVal(stvNetNew, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
-	'stvNet_new_combined' : modelDictVal(stvNetNew, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 20, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, augmentation = False),
+	'stvNetAltLabels' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 10, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, bb8Labels = False, augmentation = True),
+	'stvNetNormLabels' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 10, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, bb8Labels = True, augmentation = True),
+	'stvNet_coords' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = True, augmentation = True),
+	'stvNet_coords_altLabels' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = False, augmentation = True),
+	'stvNet_coords_altLabels_noAug' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = False, augmentation = False),
+	'stvNet_coords_noAug' : modelDictVal(stvNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = True, augmentation = False),
+	'stvNet_classes' : modelDictVal(stvNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 10, lr = 0.001, bb8Labels = True, augmentation = True),
+	'stvNet_classes_noAug' : modelDictVal(stvNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 10, lr = 0.001, bb8Labels = True, augmentation = False),
+	'stvNet_new_coords_alt' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = False, augmentation = False),
+	'stvNet_new_coords' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 10, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = True, augmentation = False),
+	'stvNet_new_coords_alt_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = False, augmentation = True),
+	'stvNet_new_coords_aug' : modelDictVal(stvNetNew, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 20, lr = 0.001, metrics = ['mae', 'mse'], bb8Labels = True, augmentation = True),
+	'stvNet_new_classes' : modelDictVal(stvNetNew, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, bb8Labels=True, augmentation = False),
+	'stvNet_new_combined' : modelDictVal(stvNetNew, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 20, lr = 0.001, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}, bb8Labels=True, augmentation = False),
 }
 	
 if __name__ == "__main__" :
-	modelSets = [modelSet('stvNet_new_coords')]
+	modelSets = [modelSet('stvNet_coords'), modelSet('uNet_classes')]
 	trainModels(modelSets)
 	
 	#evaluateModels(modelSets)
