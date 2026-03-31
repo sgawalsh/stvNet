@@ -2,6 +2,7 @@ import tensorflow as tf, numpy as np, data, os, math, pickle, matplotlib.pyplot 
 from datetime import datetime
 from keras import backend as K
 from classes import modelSet, modelDictVal
+from functools import partial
 
 huberDelta = .5
 
@@ -307,22 +308,26 @@ def trainModel(modelStruct, modelGen, modelClass = 'cat', batchSize = 2, optimiz
 		if len(outKeys) == 2: # combined output
 			for i in range(epochs):
 				print("Epoch {0} of {1}".format(i + 1, epochs))
-				hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, out0 = outKeys[0], out1 = outKeys[1], bb8Labels = bb8Labels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), callbacks = [logger])
+				hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, out0 = outKeys[0], out1 = outKeys[1], augmentation = augmentation, bb8Labels=bb8Labels), steps_per_epoch = math.ceil(len(trainData) / batchSize), callbacks = [logger])
 				history.append(hist.history)
 				if dataSplit:
 					print("Validation:")
-					valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], bb8Labels = bb8Labels, augmentation = False), steps = math.ceil(len(validData) / batchSize))
+					valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, out0 = outKeys[0], out1 = outKeys[1], augmentation = augmentation, bb8Labels=bb8Labels), steps = math.ceil(len(validData) / batchSize))
 					valHistory.append(valHist)
 		else:
 			raise Exception("Probably shouldn't be here ever..")
 	else:
+		if 'bb8Labels' in modelGen.__code__.co_varnames:
+			gen_fn = partial(modelGen, bb8Labels=bb8Labels)
+		else:
+			gen_fn = modelGen
 		for i in range(epochs):
 			print("Epoch {0} of {1}".format(i + 1, epochs))
-			hist = model.fit(modelGen(modelClass, batchSize, masterList = trainData, bb8Labels = bb8Labels, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), callbacks = [logger])
+			hist = model.fit(gen_fn(modelClass, batchSize, masterList = trainData, augmentation = augmentation), steps_per_epoch = math.ceil(len(trainData) / batchSize), callbacks = [logger])
 			history.append(hist.history)
 			if dataSplit:
 				print("Validation:")
-				valHist = model.evaluate(modelGen(modelClass, batchSize, masterList = validData, bb8Labels = bb8Labels, augmentation = False), steps = math.ceil(len(validData) / batchSize))
+				valHist = model.evaluate(gen_fn(modelClass, batchSize, masterList = validData, augmentation = augmentation), steps = math.ceil(len(validData) / batchSize))
 				valHistory.append(valHist)
 		
 	historyLog = {"struct": modelStruct.__name__,
@@ -461,7 +466,7 @@ def plotHistories(modelSets): # display loss values over epochs using pyplot
 	plt.close()
 			
 modelsDict = {
-	'uNet_classes' : modelDictVal(uNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 20, lr = 0.001, augmentation = False),
+	'uNet_classes' : modelDictVal(uNet, data.classTrainingGenerator, tf.keras.losses.BinaryCrossentropy(), False, True, epochs = 5, lr = 0.001, augmentation = False),
 	'uNet_coords' : modelDictVal(uNet, data.coordsTrainingGenerator, tf.keras.losses.Huber(), True, False, epochs = 5, lr = 0.001, metrics = ['mae', 'mse']),
 	'uNet_coords_smooth' : modelDictVal(uNet, data.coordsTrainingGenerator, smoothL1, True, False, epochs = 3, lr = 0.0001, metrics = ['mae', 'mse']),
 	'stvNet' : modelDictVal(stvNet, data.combinedTrainingGenerator, {'coordsOut': tf.keras.losses.Huber(), 'classOut': tf.keras.losses.BinaryCrossentropy()}, True, True, epochs = 5, lr = 0.00005, metrics = {'coordsOut': ['mae', 'mse'], "classOut": ['accuracy']}),
@@ -483,7 +488,7 @@ modelsDict = {
 }
 	
 if __name__ == "__main__" :
-	modelSets = [modelSet('stvNet_coords'), modelSet('uNet_classes')]
+	modelSets = [modelSet('stvNet_new_coords')]
 	trainModels(modelSets)
 	
 	#evaluateModels(modelSets)

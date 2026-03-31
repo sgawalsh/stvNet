@@ -187,8 +187,8 @@ def showKeypoints(model = 'cat', batchSize = 2, height = 480, width = 640): # di
 def labelFloatsToPixels(floatList, height = 480, width = 640, decPlace = 0): # takes normalized pixel labels, converts to integer coordinates
 	labelList = []
 	
-	for ind in range(len(floatList) // 2):
-		labelList.append([round(float(floatList[ind * 2]) * width, decPlace), round(float(floatList[ind * 2 + 1]) * height, decPlace)]) # x, y format
+	for coord in floatList:
+		labelList.append([round(float(coord[0]) * width, decPlace), round(float(coord[1]) * height, decPlace)]) # x, y format
 		
 	return labelList
 

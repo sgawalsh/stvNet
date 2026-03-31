@@ -56,9 +56,9 @@ def predictPose(coords, classes, showClassPred = False, labels = False, addNoise
 			#plt.show()
 			checkPreds[py][px] = temp
 			
-	drawPoints = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', 'bb8_3d.txt'))
+	drawPoints = np.loadtxt(os.path.join(os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelName + '\\', f'{modelName}_bb8.txt'))
 	
-	return True, pnp(pts3d, preds, drawPoints)
+	return True, pnp(pts3d, preds[(1 if bb8Labels else 0):], drawPoints)
 	
 def ransacVoting(population, coords): # ransac voting to generate 2d keypoint hypotheses
 	hypDict = {0: [], 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: []}
@@ -189,7 +189,7 @@ def testModelMask(modelName, modelStruct, tests = 5, modelClass = 'cat', outClas
 	
 	basePath = os.path.dirname(os.path.realpath(__file__)) + '\\LINEMOD\\' + modelClass
 	plt.figure()
-	for i in range(tests):
+	for _ in range(tests):
 		randNum = random.randrange(len(os.listdir(basePath + '\\JPEGImages\\')))
 		orig = Image.open(basePath + '\\JPEGImages\\' + os.listdir(basePath + '\\JPEGImages\\')[randNum])
 		#orig2 = data.filePathToArray(basePath + '\\JPEGImages\\' + os.listdir(basePath + '\\JPEGImages\\')[randNum])
@@ -391,6 +391,6 @@ def evalModels(modelSets, trials = 5, showImageChoice = False, showTrue = False,
 
 if __name__ == "__main__" :
 	# modelSets = [modelSet('stvNet_new_combined')] # combined model
-	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_new_coords'})] #separate models
+	modelSets = [modelSet({'classModel': 'uNet_classes', 'vecModel': 'stvNet_coords'})] #separate models
 	evalModels(modelSets, trials = 10, showImageChoice = True, showTrue = True, saveImage = False, saveAccuracy = False, allValid = False)
 	#accuracyPlot(modelSets, True)
