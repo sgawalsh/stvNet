@@ -30,7 +30,7 @@ opencv-python-headless==4.11.0
 opt_einsum==3.4.0
 packaging @ file:///C:/miniconda3/conda-bld/packaging_1761049101700/work
 pillow @ file:///D:/bld/bld/rattler-build_pillow_1770794018/work
-protobuf==3.19.6
+protobuf==5.29.6
 pyasn1==0.6.3
 pyasn1_modules==0.4.2
 pycparser==3.0
