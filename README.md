@@ -10,9 +10,27 @@ In brief, an RGB image is given as in input to the neural net model, which perfo
 
 We can measure the accuracy of the process by then using the [cv2 projectPoints](https://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#projectpoints) function to plot the keypoints of 3D object according to our rotation and translation vectors. This generated set of keypoints can then be measured against the ground truth values to generate error metrics over a set of predictions.
 
-I created a [youtube series](https://www.youtube.com/playlist?list=PL3om9a5CvNUl-ZUvZLS8z66uc0qOxIEqj) which goes into the design process for each of these files, and also describes the final results of the algorithm, along with the performance effects of models used, an alternate 3d label set, pruning hypotheses predictions, and the number of keypoint hypotheses considered. Also included in the repo is a ```demo.ipynb``` python notebook, which contains a demonstration of the pipeline process from the input, to the final prediction and error metrics, with a focus on the data objects used throughout the process.
+I created a [youtube series](https://www.youtube.com/playlist?list=PL3om9a5CvNUl-ZUvZLS8z66uc0qOxIEqj) which goes into the design process for each of these files, and also describes the final results of the algorithm, along with the performance effects of models used, an alternate 3d label set generated using farthest-point-sampling, pruning hypotheses predictions, and the number of keypoint hypotheses considered. Also included in the repo is a ```demo.ipynb``` python notebook, which contains a demonstration of the pipeline process from the input, to the final prediction and error metrics, with a focus on the data objects used throughout the process.
 
 ## Instructions
+
+## Quick Start
+
+Download the dataset, copy the environment via conda and train a model.
+
+`git clone https://github.com/sgawalsh/stvNet`<br/>
+`cd stvNet`<br/>
+
+Download dataset from https://www.kaggle.com/datasets/sgawalsh/linemod-imagesmasks-ply3d-keypoints2d-labels/data and move to `stvNet/LINEMOD`
+
+`conda env create -f environment.yml `<br/>
+`conda activate stvNet`<br/>
+`python models.py` # Train a model<br/>
+`python pipeLine.py`# See model prediction projections<br/> 
+
+Then open:
+- **Frontend**: http://localhost:8080
+- **Grafana**: http://localhost:3000
 
 ### Custom Model
 
@@ -40,7 +58,7 @@ If the ```saveAccuracy``` boolean was set to ```True``` in ```evalModels```, the
 
 The neural net model is trained to detect either the 2d coordinates of a set of 3d object keypoints on an image, the pixels associated with an object of interest, or both. The functions used to generate the target data for the neural nets is found in the `data.py` file. (`coordsTrainingGenerator`, `classTrainingGenerator`, `combinedTrainingGenerator`)
 
-These functions read data from the [LINEMOD](https://bop.felk.cvut.cz/datasets/) dataset, one of several datasets used in academic works in 6d pose estimation. I show the folder and talk about the data format in [this](https://www.youtube.com/watch?v=wbTdqlBXOOE) video in the youtube series, but did not include the folder in this repo due to size constraints. The dataset contains a folder for each object of interest, and within that folder, there is a `JPEGImages` folder, a `labels` folder, and a `mask` folder. `JPEGImages` contains the RGB images which are converted to numpy arrays and used as the input data for the neural net.
+A new, pre-formatted dataset has been added [here](https://www.kaggle.com/datasets/sgawalsh/linemod-imagesmasks-ply3d-keypoints2d-labels) on kaggle which provides 3D keypoint values, and 2D keypoint projections for all LINEMOD objects, separated by object category. Originally this project used the [LINEMOD](https://bop.felk.cvut.cz/datasets/) dataset, one of several datasets used in academic works in 6d pose estimation. I show the folder and talk about the data format in [this](https://www.youtube.com/watch?v=wbTdqlBXOOE) video in the youtube series, but did not include the folder in this repo due to size constraints. The dataset contains a folder for each object of interest, and within that folder, there is a `JPEGImages` folder, a `labels` folder, and a `mask` folder. `JPEGImages` contains the RGB images which are converted to numpy arrays and used as the input data for the neural net.
 
 The mask folder contains a corresponding set of images that are made up of black pixels for pixels not associated with the object of interest, or white pixels for pixels associated with the object of interest. A (HxWx1) array is generated indicating whether a pixel belongs to the object of interest, which is used as target data for the class and combined generators.
 
