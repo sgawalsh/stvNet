@@ -4,7 +4,7 @@ certifi==2026.2.25
 cffi==2.0.0
 charset-normalizer==3.4.6
 contourpy @ file:///D:/bld/contourpy_1744743084386/work
-cryptography==46.0.6
+cryptography==46.0.7
 cycler @ file:///home/conda/feedstock_root/build_artifacts/bld/rattler-build_cycler_1764466758/work
 flatbuffers==25.12.19
 fonttools @ file:///C:/bld/fonttools_1773137436265/work
