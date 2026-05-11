@@ -51,6 +51,6 @@ termcolor==3.3.0
 tornado @ file:///D:/bld/tornado_1774357955344/work
 typing_extensions==4.15.0
 unicodedata2 @ file:///D:/bld/unicodedata2_1770908984535/work
-urllib3==2.6.3
+urllib3==2.7.0
 Werkzeug==3.1.7
 wrapt==2.1.2
