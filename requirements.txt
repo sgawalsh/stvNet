@@ -14,7 +14,7 @@ google-auth-oauthlib==0.4.6
 google-pasta==0.2.0
 grpcio==1.80.0
 h5py==3.16.0
-idna==3.11
+idna==3.15
 keras==2.10.0
 Keras-Preprocessing==1.1.2
 kiwisolver @ file:///D:/bld/bld/rattler-build_kiwisolver_1773067061/work
